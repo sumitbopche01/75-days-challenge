@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@layer base {
+  :root {
+    /* Use standard colors that work with Tailwind */
+    --background: #ffffff;
+    --foreground: #000000;
+  }
+
+  .dark {
+    --background: #000000;
+    --foreground: #ffffff;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    @apply bg-white text-gray-900 font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overscroll-behavior: none;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 hover:bg-gray-200;
+  }
+
+  .btn-destructive {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+
+  .btn-outline {
+    @apply border border-gray-300 hover:bg-gray-50 hover:text-gray-900;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-gray-100 hover:text-gray-900;
+  }
+
+  .btn-sm {
+    @apply h-9 px-3 text-xs;
+  }
+
+  .btn-md {
+    @apply h-10 py-2 px-4;
+  }
+
+  .btn-lg {
+    @apply h-11 px-8 text-base;
+  }
+
+  /* Card component */
+  .card {
+    @apply rounded-lg border border-gray-200 bg-white text-gray-900 shadow-sm;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .card-description {
+    @apply text-sm text-gray-600;
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+
+  /* Input styles */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Label styles */
+  .label {
+    @apply text-sm font-medium leading-none;
+  }
+
+  /* Progress bar */
+  .progress {
+    @apply relative h-4 w-full overflow-hidden rounded-full bg-gray-200;
+  }
+
+  .progress-bar {
+    @apply h-full w-full flex-1 bg-blue-600 transition-all;
+  }
+
+  /* Checkbox styles */
+  .checkbox {
+    @apply h-4 w-4 shrink-0 rounded-sm border border-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Challenge specific styles */
+  .task-item {
+    @apply flex items-center space-x-3 p-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors;
+  }
+
+  .task-completed {
+    @apply bg-green-50 border-green-200 text-green-800;
+  }
+
+  .water-progress {
+    @apply relative h-8 w-full overflow-hidden rounded-full bg-blue-100;
+  }
+
+  .water-progress-bar {
+    @apply h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500 ease-out;
+  }
+
+  .day-card {
+    @apply relative p-4 rounded-lg border border-gray-200 bg-white hover:shadow-md transition-all duration-200;
+  }
+
+  .day-card-completed {
+    @apply bg-gradient-to-br from-green-50 to-green-100 border-green-200;
+  }
+
+  .day-card-current {
+    @apply bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 ring-2 ring-blue-200;
+  }
+
+  .streak-counter {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 border border-orange-200;
+  }
+
+  /* Animation classes */
+  .animate-success {
+    @apply animate-pulse;
+  }
+
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s infinite;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .card-header {
+      @apply p-4;
+    }
+    
+    .card-content {
+      @apply p-4 pt-0;
+    }
+    
+    .card-footer {
+      @apply p-4 pt-0;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Safe area utilities for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Custom gradients */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-blue-500 to-blue-700;
+  }
+
+  .gradient-success {
+    @apply bg-gradient-to-r from-green-500 to-green-700;
+  }
+
+  .gradient-water {
+    @apply bg-gradient-to-r from-blue-400 to-blue-600;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/10 backdrop-blur-md border border-white/10;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+} 
