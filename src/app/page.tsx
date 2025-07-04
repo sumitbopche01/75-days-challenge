@@ -403,37 +403,37 @@ export default function HomePage() {
 
     if (showSetup || !userProfile) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 flex items-center justify-center p-4">
-                <div className="max-w-md w-full space-y-8">
-                    <div className="text-center space-y-6">
+            <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 flex items-center justify-center p-4 py-8 safe-top safe-bottom overflow-y-auto">
+                <div className="max-w-md w-full space-y-4 sm:space-y-8 my-auto">
+                    <div className="text-center space-y-4 sm:space-y-6">
                         <div className="relative">
-                            <div className="mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                                <Trophy className="w-12 h-12 text-white" />
+                            <div className="mx-auto w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl">
+                                <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
                             </div>
-                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-pink-400 to-red-500 rounded-full flex items-center justify-center animate-bounce">
-                                <span className="text-lg">🔥</span>
+                            <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-pink-400 to-red-500 rounded-full flex items-center justify-center animate-bounce">
+                                <span className="text-sm sm:text-lg">🔥</span>
                             </div>
                         </div>
                         <div>
-                            <h1 className="text-4xl font-bold text-white mb-3">
+                            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2 sm:mb-3">
                                 Welcome to 75 Hard
                             </h1>
-                            <p className="text-xl text-blue-100">
+                            <p className="text-sm sm:text-xl text-blue-100 px-2">
                                 Transform your life in 75 days through mental toughness and discipline
                             </p>
                         </div>
                     </div>
 
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/30 p-8">
-                        <div className="space-y-6">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-2xl border border-white/30 p-4 sm:p-8">
+                        <div className="space-y-4 sm:space-y-6">
                             <div className="text-center">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">🚀 Get Started</h2>
-                                <p className="text-gray-600">
+                                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-1 sm:mb-2">🚀 Get Started</h2>
+                                <p className="text-sm sm:text-base text-gray-600">
                                     Enter your name to begin your personalized 75 Hard journey
                                 </p>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                                         Your Name
@@ -444,7 +444,7 @@ export default function HomePage() {
                                         value={userName}
                                         onChange={(e) => setUserName(e.target.value)}
                                         placeholder="Enter your name"
-                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 text-gray-800"
+                                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 text-gray-800 text-sm sm:text-base"
                                         onKeyPress={(e) => e.key === 'Enter' && handleStartChallenge()}
                                         autoFocus
                                     />
@@ -453,9 +453,9 @@ export default function HomePage() {
                                 <button
                                     onClick={handleStartChallenge}
                                     disabled={!userName.trim()}
-                                    className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+                                    className="w-full px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg sm:rounded-xl hover:from-purple-600 hover:to-blue-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-sm sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
                                 >
-                                    <Play className="w-6 h-6 mr-3 inline" />
+                                    <Play className="w-4 h-4 sm:w-6 sm:h-6 mr-2 sm:mr-3 inline" />
                                     Start 75 Hard Challenge
                                 </button>
                             </div>
@@ -463,7 +463,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="text-center">
-                        <p className="text-blue-100">
+                        <p className="text-xs sm:text-base text-blue-100">
                             ✨ Create your own challenge with personalized tasks
                         </p>
                     </div>

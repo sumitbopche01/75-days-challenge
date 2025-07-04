@@ -27,10 +27,23 @@
     @apply bg-white text-gray-900 font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
     overscroll-behavior: none;
+    /* Prevent zoom on double tap for iOS */
+    touch-action: manipulation;
+    /* Ensure proper height calculation on mobile */
+    min-height: -webkit-fill-available;
   }
 
   html {
     @apply scroll-smooth;
+    /* Support iOS safe areas and dynamic viewport */
+    height: -webkit-fill-available;
+  }
+
+  /* Fix for mobile viewport height issues */
+  .min-h-screen {
+    min-height: 100vh;
+    /* Fallback for browsers that don't support dvh */
+    min-height: 100dvh;
   }
 
   /* Custom scrollbar styles */
@@ -219,6 +232,27 @@
     padding-right: env(safe-area-inset-right);
   }
 
+  /* Mobile viewport utilities */
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for modern browsers */
+    min-height: -webkit-fill-available; /* iOS fallback */
+  }
+
+  .max-h-screen-mobile {
+    max-height: 100vh;
+    max-height: 100dvh;
+    max-height: -webkit-fill-available;
+  }
+
+  /* Touch optimizations */
+  .touch-optimized {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   /* Custom gradients */
   .gradient-primary {
     @apply bg-gradient-to-r from-blue-500 to-blue-700;
@@ -239,6 +273,31 @@
 
   .glass-dark {
     @apply bg-black/10 backdrop-blur-md border border-white/10;
+  }
+
+  /* Mobile-first responsive text sizing */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  .text-responsive-2xl {
+    @apply text-2xl sm:text-3xl lg:text-4xl;
   }
 }
 

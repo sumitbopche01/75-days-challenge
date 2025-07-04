@@ -92,9 +92,10 @@ export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
     minimumScale: 1,
-    maximumScale: 5,
-    userScalable: true,
+    maximumScale: 1,
+    userScalable: false,
     viewportFit: 'cover',
+    interactiveWidget: 'resizes-content',
 };
 
 interface RootLayoutProps {
@@ -105,6 +106,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="en" className={inter.variable} suppressHydrationWarning>
             <head>
+                {/* Viewport and mobile optimizations */}
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
                 {/* Additional PWA meta tags */}
                 <meta name="application-name" content="75 Hard Challenge" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -115,6 +119,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <meta name="msapplication-config" content="/browserconfig.xml" />
                 <meta name="msapplication-TileColor" content="#0ea5e9" />
                 <meta name="msapplication-tap-highlight" content="no" />
+
+                {/* Prevent zoom on input focus (iOS) */}
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        @media screen and (max-width: 768px) {
+                            input, textarea, select {
+                                font-size: 16px !important;
+                            }
+                        }
+                    `
+                }} />
 
                 {/* Preload critical resources */}
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
