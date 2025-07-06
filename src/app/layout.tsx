@@ -6,6 +6,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import SessionWrapper from '@/components/SessionWrapper';
 
 const inter = Inter({
     subsets: ['latin'],
@@ -143,24 +144,25 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <link rel="manifest" href="/manifest.json" />
             </head>
             <body className={`${inter.className} antialiased`}>
-                <div id="root" className="min-h-screen bg-background">
-                    {/* Skip to main content for accessibility */}
-                    <a
-                        href="#main-content"
-                        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-primary focus:text-primary-foreground focus:rounded"
-                    >
-                        Skip to main content
-                    </a>
+                <SessionWrapper>
+                    <div id="root" className="min-h-screen bg-background">
+                        {/* Skip to main content for accessibility */}
+                        <a
+                            href="#main-content"
+                            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-primary focus:text-primary-foreground focus:rounded"
+                        >
+                            Skip to main content
+                        </a>
 
-                    {/* Main app content */}
-                    <main id="main-content" className="min-h-screen">
-                        {children}
-                    </main>
+                        {/* Main app content */}
+                        <main id="main-content" className="min-h-screen">
+                            {children}
+                        </main>
 
-                    {/* Service worker registration script */}
-                    <script
-                        dangerouslySetInnerHTML={{
-                            __html: `
+                        {/* Service worker registration script */}
+                        <script
+                            dangerouslySetInnerHTML={{
+                                __html: `
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/sw.js')
@@ -173,43 +175,43 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   });
                 }
               `,
-                        }}
-                    />
-                </div>
+                            }}
+                        />
+                    </div>
 
-                {/* Install prompt for PWA */}
-                <div id="install-prompt" className="hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg z-50 border-b border-blue-500">
-                    <div className="px-4 py-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
+                    {/* Install prompt for PWA */}
+                    <div id="install-prompt" className="hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg z-50 border-b border-blue-500">
+                        <div className="px-4 py-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-sm">Install 75 Hard App</h3>
+                                        <p className="text-xs text-blue-100">Get the full app experience</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-sm">Install 75 Hard App</h3>
-                                    <p className="text-xs text-blue-100">Get the full app experience</p>
+                                <div className="flex items-center space-x-2">
+                                    <button id="install-button" className="px-3 py-1.5 bg-white text-blue-600 text-sm font-medium rounded-md hover:bg-blue-50 transition-colors">
+                                        Install
+                                    </button>
+                                    <button id="install-close" className="p-1 hover:bg-white/20 rounded-md transition-colors">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
                                 </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <button id="install-button" className="px-3 py-1.5 bg-white text-blue-600 text-sm font-medium rounded-md hover:bg-blue-50 transition-colors">
-                                    Install
-                                </button>
-                                <button id="install-close" className="p-1 hover:bg-white/20 rounded-md transition-colors">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* PWA install prompt script */}
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `
+                    {/* PWA install prompt script */}
+                    <script
+                        dangerouslySetInnerHTML={{
+                            __html: `
               let deferredPrompt;
               const installPrompt = document.getElementById('install-prompt');
               const installButton = document.getElementById('install-button');
@@ -255,8 +257,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 deferredPrompt = null;
               });
             `,
-                    }}
-                />
+                        }}
+                    />
+                </SessionWrapper>
             </body>
         </html>
     );

@@ -143,15 +143,18 @@ export interface ProgressPhoto {
 }
 
 export interface ChallengeSettings {
-    startDate: string; // ISO date string
-    endDate: string; // ISO date string
-    currentDay: number;
+    id?: string;
+    startDate: string;
+    endDate: string;
     isActive: boolean;
-    isPaused: boolean;
-    waterTarget: number; // daily water target in ounces
-    notifications: {
+    currentDay?: number;
+    isPaused?: boolean;
+    waterTarget?: number;
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    customRules?: string[];
+    notifications?: {
         enabled: boolean;
-        reminderTimes: string[]; // array of time strings like "09:00"
+        reminderTimes: string[];
     };
 }
 
@@ -175,16 +178,19 @@ export interface ChallengeStats {
 }
 
 export interface UserProfile {
-    id: string;
+    id?: string;
     name: string;
     email?: string;
-    joinDate: Date;
-    challengeAttempts: number;
+    avatar?: string;
+    createdAt?: string;
+    joinDate?: Date;
+    challengeAttempts?: number;
     currentChallenge?: ChallengeSettings;
-    preferences: {
-        theme: 'light' | 'dark' | 'system';
-        units: 'imperial' | 'metric';
-        defaultWorkoutDuration: number;
+    preferences?: {
+        notifications?: boolean;
+        theme?: 'light' | 'dark' | 'system';
+        units?: 'imperial' | 'metric';
+        defaultWorkoutDuration?: number;
     };
 }
 

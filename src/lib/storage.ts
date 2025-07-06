@@ -86,7 +86,7 @@ export class ChallengeStorage {
         // Update user profile attempt count
         const profile = this.getUserProfile();
         if (profile) {
-            profile.challengeAttempts += 1;
+            profile.challengeAttempts = (profile.challengeAttempts || 0) + 1;
             profile.currentChallenge = settings;
             this.saveUserProfile(profile);
         }

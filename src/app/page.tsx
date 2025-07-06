@@ -29,6 +29,16 @@ import {
     Edit,
     Trash
 } from 'lucide-react';
+import Header from '@/components/Header';
+import ProgressOverview from '@/components/ProgressOverview';
+import TaskList from '@/components/TaskList';
+import AddTaskForm from '@/components/AddTaskForm';
+import BottomNavigation from '@/components/BottomNavigation';
+import SettingsModal from '@/components/SettingsModal';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import { useSession, signIn } from 'next-auth/react';
+import { apiClient } from '@/lib/api-client';
+import { DatabaseCustomTask } from '@/types/database';
 
 export default function HomePage() {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -45,7 +55,7 @@ export default function HomePage() {
     const [editName, setEditName] = useState('');
 
     // Custom tasks state
-    const [customTasks, setCustomTasks] = useState<string[]>([]);
+    const [customTasks, setCustomTasks] = useState<DatabaseCustomTask[]>([]);
     const [newTaskText, setNewTaskText] = useState('');
     const [showAddTask, setShowAddTask] = useState(false);
     const [completedTasks, setCompletedTasks] = useState<{ [key: string]: string | boolean }>({});
@@ -60,6 +70,8 @@ export default function HomePage() {
         "Walk 8,000 steps",
         "No social media for 1 hour before bed"
     ];
+
+    const { data: session, status } = useSession();
 
     // Task icons and colors for better visual appeal
     const getTaskDisplay = (taskText: string) => {
@@ -87,60 +99,134 @@ export default function HomePage() {
     useEffect(() => {
         console.log('🔄 Component mounted, initializing...');
 
-        const initialize = () => {
+        const initialize = async () => {
             try {
-                const profile = localStorage.getItem('user_profile');
-                const storedTasks = localStorage.getItem('custom_tasks');
-                const storedCompleted = localStorage.getItem('completed_tasks');
+                // Check if user is authenticated
+                if (session?.user?.email) {
+                    console.log('✅ User authenticated, loading from API');
 
-                if (storedTasks) {
-                    const parsedTasks = JSON.parse(storedTasks);
-                    if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
-                        setCustomTasks(parsedTasks);
+                    // Try to get user profile from API
+                    try {
+                        const { user } = await apiClient.getProfile();
+                        if (user) {
+                            setUserProfile({
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                createdAt: user.created_at,
+                            });
+
+                            // Load user's custom tasks
+                            const { tasks } = await apiClient.getTasks();
+                            if (tasks.length > 0) {
+                                setCustomTasks(tasks);
+                            } else {
+                                // Initialize default tasks for new user
+                                console.log('📝 No tasks found, creating defaults');
+                                const { tasks: defaultTasks } = await apiClient.initializeDefaultTasks(DEFAULT_TASKS);
+                                setCustomTasks(defaultTasks);
+                            }
+
+                            // Load challenge data
+                            const { challenges } = await apiClient.getChallenges();
+                            const activeChallenge = challenges.find(c => c.is_active);
+                            if (activeChallenge) {
+                                setChallengeSettings({
+                                    id: activeChallenge.id,
+                                    startDate: activeChallenge.start_date,
+                                    endDate: activeChallenge.end_date,
+                                    isActive: activeChallenge.is_active,
+                                    currentDay: activeChallenge.current_day,
+                                });
+                            }
+
+                            console.log('✅ User data loaded from API');
+                        } else {
+                            console.log('❌ No user profile found');
+                            setShowSetup(true);
+                        }
+                    } catch (error) {
+                        console.log('❌ Error loading user data, showing setup:', error);
+                        setShowSetup(true);
+                    }
+                } else {
+                    // Fallback to localStorage for non-authenticated users
+                    console.log('⚠️ No session, checking localStorage');
+                    const profile = localStorage.getItem('user_profile');
+                    const storedTasks = localStorage.getItem('custom_tasks');
+                    const storedCompleted = localStorage.getItem('completed_tasks');
+
+                    if (storedTasks) {
+                        const parsedTasks = JSON.parse(storedTasks);
+                        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
+                            // Convert string array to DatabaseCustomTask format for backward compatibility
+                            const formattedTasks = parsedTasks.map((task, index) => ({
+                                id: `local-${index}`,
+                                user_id: 'local',
+                                task_text: typeof task === 'string' ? task : task.task_text,
+                                is_default: true,
+                                order_index: index,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString(),
+                            }));
+                            setCustomTasks(formattedTasks);
+                        } else {
+                            const formattedDefaults = DEFAULT_TASKS.map((task, index) => ({
+                                id: `default-${index}`,
+                                user_id: 'local',
+                                task_text: task,
+                                is_default: true,
+                                order_index: index,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString(),
+                            }));
+                            setCustomTasks(formattedDefaults);
+                            localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
+                        }
                     } else {
-                        // If stored tasks exist but are empty, use defaults
-                        console.log('📝 Empty stored tasks found, loading defaults');
-                        setCustomTasks(DEFAULT_TASKS);
+                        const formattedDefaults = DEFAULT_TASKS.map((task, index) => ({
+                            id: `default-${index}`,
+                            user_id: 'local',
+                            task_text: task,
+                            is_default: true,
+                            order_index: index,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                        }));
+                        setCustomTasks(formattedDefaults);
                         localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
                     }
-                } else {
-                    // If no stored tasks, use defaults
-                    console.log('📝 No stored tasks found, loading defaults');
-                    setCustomTasks(DEFAULT_TASKS);
-                    localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
-                }
 
-                if (storedCompleted) {
-                    const completed = JSON.parse(storedCompleted);
-                    const lastReset = localStorage.getItem('last_reset_date');
-                    const today = new Date().toDateString();
+                    if (storedCompleted) {
+                        const completed = JSON.parse(storedCompleted);
+                        const lastReset = localStorage.getItem('last_reset_date');
+                        const today = new Date().toDateString();
 
-                    // Reset tasks if it's a new day
-                    if (lastReset !== today) {
-                        setCompletedTasks({});
-                        localStorage.setItem('completed_tasks', JSON.stringify({}));
-                        localStorage.setItem('last_reset_date', today);
+                        if (lastReset !== today) {
+                            setCompletedTasks({});
+                            localStorage.setItem('completed_tasks', JSON.stringify({}));
+                            localStorage.setItem('last_reset_date', today);
+                        } else {
+                            setCompletedTasks(completed);
+                        }
                     } else {
-                        setCompletedTasks(completed);
-                    }
-                } else {
-                    // Set initial reset date
-                    localStorage.setItem('last_reset_date', new Date().toDateString());
-                }
-
-                if (profile) {
-                    const parsedProfile = JSON.parse(profile);
-                    setUserProfile(parsedProfile);
-
-                    const settings = localStorage.getItem('challenge_settings');
-                    if (settings) {
-                        setChallengeSettings(JSON.parse(settings));
+                        localStorage.setItem('last_reset_date', new Date().toDateString());
                     }
 
-                    console.log('✅ Existing user - loading main app');
-                } else {
-                    console.log('❌ New user - showing setup');
-                    setShowSetup(true);
+                    if (profile) {
+                        const parsedProfile = JSON.parse(profile);
+                        setUserProfile(parsedProfile);
+
+                        const settings = localStorage.getItem('challenge_settings');
+                        if (settings) {
+                            setChallengeSettings(JSON.parse(settings));
+                        }
+
+                        console.log('✅ Existing user - loading main app');
+                    } else {
+                        console.log('❌ New user - showing setup');
+                        setShowSetup(true);
+                    }
                 }
             } catch (error) {
                 console.error('💥 Error during initialization:', error);
@@ -149,11 +235,10 @@ export default function HomePage() {
 
             setIsLoading(false);
             console.log('🏁 Initialization complete');
-            console.log('📊 Final state - customTasks.length:', customTasks.length);
         };
 
         initialize();
-    }, []);
+    }, [session]);
 
     // Debug effect to monitor customTasks changes
     useEffect(() => {
@@ -164,7 +249,15 @@ export default function HomePage() {
     useEffect(() => {
         if (!isLoading && userProfile && customTasks.length === 0) {
             console.log('🔥 Force loading default tasks for existing user');
-            setCustomTasks(DEFAULT_TASKS);
+            setCustomTasks(DEFAULT_TASKS.map((task, index) => ({
+                id: `default-${index}`,
+                user_id: 'local',
+                task_text: task,
+                is_default: true,
+                order_index: index,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })));
             localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
         }
     }, [isLoading, userProfile, customTasks.length]);
@@ -184,7 +277,15 @@ export default function HomePage() {
 
         // Set default tasks for new users
         if (customTasks.length === 0) {
-            setCustomTasks(DEFAULT_TASKS);
+            setCustomTasks(DEFAULT_TASKS.map((task, index) => ({
+                id: `default-${index}`,
+                user_id: 'local',
+                task_text: task,
+                is_default: true,
+                order_index: index,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })));
             localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
         }
 
@@ -194,27 +295,142 @@ export default function HomePage() {
         setShowSetup(false);
     };
 
-    const handleAddCustomTask = () => {
-        if (!newTaskText.trim()) return;
-
-        const updatedTasks = [...customTasks, newTaskText.trim()];
-        setCustomTasks(updatedTasks);
-        localStorage.setItem('custom_tasks', JSON.stringify(updatedTasks));
-        setNewTaskText('');
-        setShowAddTask(false);
+    const handleGoogleSignIn = () => {
+        signIn('google');
     };
 
-    const handleDeleteCustomTask = (index: number) => {
-        const updatedTasks = customTasks.filter((_, i) => i !== index);
-        setCustomTasks(updatedTasks);
-        localStorage.setItem('custom_tasks', JSON.stringify(updatedTasks));
+    // Auto-start challenge when user signs in with Google
+    useEffect(() => {
+        if (session?.user?.name && session?.user?.email && !userProfile) {
+            const createUserAndChallenge = async () => {
+                try {
+                    // Create user profile via API
+                    const { user } = await apiClient.createProfile({
+                        name: session.user?.name!,
+                        google_id: session.user?.email!, // Use email as google_id since session.user.id doesn't exist
+                        avatar_url: session.user?.image || undefined,
+                    });
 
-        // Also remove from completed tasks
-        const taskToRemove = customTasks[index];
-        const updatedCompleted = { ...completedTasks };
-        delete updatedCompleted[taskToRemove];
-        setCompletedTasks(updatedCompleted);
-        localStorage.setItem('completed_tasks', JSON.stringify(updatedCompleted));
+                    // Create challenge via API
+                    const { challenge } = await apiClient.createChallenge({
+                        start_date: new Date().toISOString().split('T')[0],
+                    });
+
+                    // Initialize default tasks
+                    const { tasks } = await apiClient.initializeDefaultTasks(DEFAULT_TASKS);
+
+                    // Update local state
+                    setUserProfile({
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        createdAt: user.created_at,
+                    });
+
+                    setChallengeSettings({
+                        id: challenge.id,
+                        startDate: challenge.start_date,
+                        endDate: challenge.end_date,
+                        isActive: challenge.is_active,
+                        currentDay: challenge.current_day,
+                    });
+
+                    setCustomTasks(tasks);
+                    setShowSetup(false);
+                } catch (error) {
+                    console.error('Failed to create user and challenge:', error);
+                    // Fallback to localStorage approach
+                    const profile = ChallengeStorage.createDefaultProfile(session.user?.name!);
+                    const settings = ChallengeStorage.initializeChallenge();
+                    const today = dateUtils.toISOString(new Date());
+                    const dayProgress = ChallengeStorage.createDayProgress(today, 1);
+
+                    if (customTasks.length === 0) {
+                        const formattedDefaults = DEFAULT_TASKS.map((task, index) => ({
+                            id: `default-${index}`,
+                            user_id: 'local',
+                            task_text: task,
+                            is_default: true,
+                            order_index: index,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                        }));
+                        setCustomTasks(formattedDefaults);
+                        localStorage.setItem('custom_tasks', JSON.stringify(DEFAULT_TASKS));
+                    }
+
+                    setUserProfile(profile);
+                    setChallengeSettings(settings);
+                    setTodayProgress(dayProgress);
+                    setShowSetup(false);
+                }
+            };
+
+            createUserAndChallenge();
+        }
+    }, [session, userProfile]);
+
+    const handleAddCustomTask = async () => {
+        if (!newTaskText.trim()) return;
+
+        try {
+            if (session?.user?.email) {
+                // Add task via API
+                const { task } = await apiClient.createTask({
+                    task_text: newTaskText.trim(),
+                    is_default: false,
+                });
+                setCustomTasks(prev => [...prev, task]);
+            } else {
+                // Fallback to localStorage
+                const newTask = {
+                    id: `local-${Date.now()}`,
+                    user_id: 'local',
+                    task_text: newTaskText.trim(),
+                    is_default: false,
+                    order_index: customTasks.length,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
+                const updatedTasks = [...customTasks, newTask];
+                setCustomTasks(updatedTasks);
+                localStorage.setItem('custom_tasks', JSON.stringify(updatedTasks.map(t => t.task_text)));
+            }
+
+            setNewTaskText('');
+            setShowAddTask(false);
+        } catch (error) {
+            console.error('Failed to add task:', error);
+            alert('Failed to add task. Please try again.');
+        }
+    };
+
+    const handleDeleteCustomTask = async (index: number) => {
+        try {
+            const taskToDelete = customTasks[index];
+
+            if (session?.user?.email && !taskToDelete.id.startsWith('local-')) {
+                // Delete task via API
+                await apiClient.deleteTask({ task_id: taskToDelete.id });
+            } else {
+                // Update localStorage
+                const updatedTasks = customTasks.filter((_, i) => i !== index);
+                localStorage.setItem('custom_tasks', JSON.stringify(updatedTasks.map(t => t.task_text)));
+            }
+
+            // Update local state
+            const updatedTasks = customTasks.filter((_, i) => i !== index);
+            setCustomTasks(updatedTasks);
+
+            // Also remove from completed tasks
+            const updatedCompleted = { ...completedTasks };
+            delete updatedCompleted[taskToDelete.task_text];
+            setCompletedTasks(updatedCompleted);
+            localStorage.setItem('completed_tasks', JSON.stringify(updatedCompleted));
+        } catch (error) {
+            console.error('Failed to delete task:', error);
+            alert('Failed to delete task. Please try again.');
+        }
     };
 
     const handleToggleTask = (taskName: string) => {
@@ -225,6 +441,9 @@ export default function HomePage() {
         };
         setCompletedTasks(updatedCompleted);
         localStorage.setItem('completed_tasks', JSON.stringify(updatedCompleted));
+
+        // TODO: In the future, this should also save to the API for authenticated users
+        // For now, we'll keep using localStorage for task completion tracking
     };
 
     // Varied celebration messages and emojis
@@ -429,10 +648,38 @@ export default function HomePage() {
                             <div className="text-center">
                                 <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-1 sm:mb-2">🚀 Get Started</h2>
                                 <p className="text-sm sm:text-base text-gray-600">
-                                    Enter your name to begin your personalized 75 Hard journey
+                                    Choose how you'd like to begin your 75 Hard journey
                                 </p>
                             </div>
 
+                            {/* Google Sign In Button */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleGoogleSignIn}
+                                    disabled={status === 'loading'}
+                                    className="w-full flex items-center justify-center px-4 py-3 sm:px-6 sm:py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg"
+                                >
+                                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                    </svg>
+                                    {status === 'loading' ? 'Loading...' : 'Continue with Google'}
+                                </button>
+
+                                {/* Divider */}
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-300"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="px-2 bg-white text-gray-500">or enter manually</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Manual Name Entry */}
                             <div className="space-y-3 sm:space-y-4">
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -446,7 +693,6 @@ export default function HomePage() {
                                         placeholder="Enter your name"
                                         className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 text-gray-800 text-sm sm:text-base"
                                         onKeyPress={(e) => e.key === 'Enter' && handleStartChallenge()}
-                                        autoFocus
                                     />
                                 </div>
 
@@ -490,239 +736,57 @@ export default function HomePage() {
         <>
             <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
                 {/* Header */}
-                <header className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-sm shadow-xl border-b border-white/20 safe-top">
-                    <div className="max-w-4xl mx-auto px-4">
-                        <div className="flex justify-between items-center py-4">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <Trophy className="w-7 h-7 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-white">75 Hard Challenge</h1>
-                                    <p className="text-sm text-blue-100">{getGreeting()}, {userProfile?.name || 'User'} 👋</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleShowSettings}
-                                className="p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
-                            >
-                                <Settings className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
+                <Header onShowSettings={handleShowSettings} />
 
                 {/* Main Content */}
                 <div className="max-w-4xl mx-auto px-4 py-3 pb-20">
-
                     {/* Progress Overview */}
-                    <div className="bg-gradient-to-br from-white/95 to-blue-50/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/30 p-4 mb-4 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-blue-400/20 rounded-full blur-xl"></div>
-                        <div className="relative">
-                            <div className="flex items-center justify-between mb-3">
-                                <div>
-                                    <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                                        Day {currentDay} of 75
-                                    </h2>
-                                    <p className="text-sm text-gray-600">
-                                        {isActive ? getMotivationalMessage(currentDay, todayProgress?.allCompleted || false) : 'Challenge Complete! 🎉'}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                                        {progressPercentage.toFixed(0)}%
-                                    </div>
-                                    <div className="text-xs text-gray-500">Complete</div>
-                                </div>
-                            </div>
+                    <ProgressOverview
+                        currentDay={currentDay}
+                        progressPercentage={progressPercentage}
+                        isActive={!!isActive}
+                        completedTasks={completedTasks}
+                        customTasks={customTasks}
+                        todayProgress={todayProgress}
+                    />
 
-                            <div className="mb-3">
-                                <div className="h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 rounded-full transition-all duration-700 ease-out"
-                                        style={{ width: `${progressPercentage}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-4 gap-2 text-center">
-                                <div className="bg-white/60 rounded-lg p-2">
-                                    <div className="text-sm font-bold text-gray-800">{Math.max(0, currentDay - 1)}</div>
-                                    <div className="text-xs text-gray-500">Days</div>
-                                </div>
-                                <div className="bg-white/60 rounded-lg p-2">
-                                    <div className="text-sm font-bold text-gray-800">{Math.max(0, 75 - currentDay + 1)}</div>
-                                    <div className="text-xs text-gray-500">Left</div>
-                                </div>
-                                <div className="bg-white/60 rounded-lg p-2">
-                                    <div className="text-sm font-bold text-gray-800">
-                                        {Object.values(completedTasks).filter(val => val !== false).length}/{customTasks.length}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Tasks</div>
-                                </div>
-                                <div className="bg-white/60 rounded-lg p-2">
-                                    <div className="text-lg">
-                                        {Object.values(completedTasks).filter(val => val !== false).length === customTasks.length && customTasks.length > 0 ? '🎉' : '⏳'}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Status</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Custom Tasks Section */}
+                    {/* Views */}
                     {currentView === 'home' && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between mb-3">
-                                <div>
-                                    <h2 className="text-lg font-semibold text-white">Your Tasks</h2>
-                                    <p className="text-sm text-blue-200/80">Tap to complete, customize as needed</p>
-                                </div>
-                                <button
-                                    onClick={() => setShowAddTask(true)}
-                                    className="flex items-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>Add</span>
-                                </button>
-                            </div>
-
-                            {/* Add Task Form */}
-                            {showAddTask && (
-                                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-3 shadow-md">
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            value={newTaskText}
-                                            onChange={(e) => setNewTaskText(e.target.value)}
-                                            placeholder="Enter your task (e.g., Meditate for 10 minutes)"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 text-gray-800 placeholder-gray-500 text-sm"
-                                            onKeyPress={(e) => e.key === 'Enter' && handleAddCustomTask()}
-                                            autoFocus
-                                        />
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={handleAddCustomTask}
-                                                disabled={!newTaskText.trim()}
-                                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                                            >
-                                                Add Task
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setShowAddTask(false);
-                                                    setNewTaskText('');
-                                                }}
-                                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 transition-colors text-sm"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Custom Tasks List */}
-                            {customTasks.length > 0 ? (
-                                <div className="space-y-2">
-                                    {customTasks.map((task, index) => {
-                                        const completionData = completedTasks[task];
-                                        const isCompleted = completionData !== false && !!completionData;
-                                        const taskDisplay = getTaskDisplay(task);
-                                        const celebration = getCelebrationContent(task);
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={`relative rounded-lg border transition-all duration-200 hover:shadow-md ${isCompleted
-                                                    ? `bg-gradient-to-r ${taskDisplay.bgColor} border-green-300`
-                                                    : 'bg-white border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="p-3">
-                                                    <div className="flex items-center">
-                                                        <div
-                                                            className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200 ${isCompleted
-                                                                ? 'bg-green-500 text-white'
-                                                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                                                                }`}
-                                                            onClick={() => handleToggleTask(task)}
-                                                        >
-                                                            {isCompleted ? (
-                                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                </svg>
-                                                            ) : (
-                                                                <span className="text-lg">{taskDisplay.icon}</span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex-1 min-w-0 ml-3">
-                                                            <h3 className={`font-medium text-base ${isCompleted ? 'text-green-700 opacity-75' : 'text-gray-800'}`}>
-                                                                {task}
-                                                            </h3>
-                                                            <p className={`text-xs mt-0.5 ${isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
-                                                                {isCompleted
-                                                                    ? `${celebration.message} • ${formatCompletionTime(completionData as string)}`
-                                                                    : 'Tap to complete'
-                                                                }
-                                                            </p>
-                                                        </div>
-
-                                                        <button
-                                                            onClick={() => handleDeleteCustomTask(index)}
-                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2"
-                                                        >
-                                                            <Trash className="w-4 h-4" />
-                                                        </button>
-
-                                                        {isCompleted && (
-                                                            <div className="ml-1">
-                                                                <span className="text-lg">{celebration.emoji}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="bg-white rounded-lg border border-gray-200 p-6 text-center shadow-sm">
-                                    <div className="w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                                        <Target className="w-6 h-6 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-base font-semibold text-gray-700 mb-2">No tasks yet</h3>
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        Add your first task to get started with your challenge
-                                    </p>
-                                    <button
-                                        onClick={() => setShowAddTask(true)}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                                    >
-                                        Add Your First Task
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        <TaskList
+                            customTasks={customTasks}
+                            completedTasks={completedTasks}
+                            onToggleTask={handleToggleTask}
+                            onDeleteTask={handleDeleteCustomTask}
+                            onShowAddTask={() => setShowAddTask(true)}
+                            showAddTask={showAddTask}
+                            AddTaskForm={
+                                <AddTaskForm
+                                    newTaskText={newTaskText}
+                                    onChangeNewTaskText={(e) => setNewTaskText(e.target.value)}
+                                    onAddCustomTask={handleAddCustomTask}
+                                    onCancel={() => {
+                                        setShowAddTask(false);
+                                        setNewTaskText('');
+                                    }}
+                                />
+                            }
+                            getTaskDisplay={getTaskDisplay}
+                            getCelebrationContent={getCelebrationContent}
+                            formatCompletionTime={formatCompletionTime}
+                        />
                     )}
-
-                    {/* Calendar View */}
                     {currentView === 'calendar' && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Challenge Calendar</h2>
                             <p className="text-gray-600">Calendar view coming soon...</p>
                         </div>
                     )}
-
-                    {/* Stats View */}
                     {currentView === 'stats' && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Statistics</h2>
                             <p className="text-gray-600">Statistics view coming soon...</p>
                         </div>
                     )}
-
-                    {/* Community View */}
                     {currentView === 'community' && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Community</h2>
@@ -732,191 +796,48 @@ export default function HomePage() {
                 </div>
 
                 {/* Bottom Navigation */}
-                <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-bottom">
-                    <div className="max-w-4xl mx-auto px-4">
-                        <div className="flex justify-around py-2">
-                            {[
-                                { id: 'home', icon: Trophy, label: 'Home' },
-                                { id: 'calendar', icon: Calendar, label: 'Calendar' },
-                                { id: 'stats', icon: BarChart3, label: 'Stats' },
-                                { id: 'community', icon: Users, label: 'Community' }
-                            ].map((item) => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleNavigation(item.id as any)}
-                                    className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${currentView === item.id
-                                        ? 'text-blue-600 bg-blue-50'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    <item.icon className="w-5 h-5 mb-1" />
-                                    <span className="text-xs font-medium">{item.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </nav>
+                <BottomNavigation currentView={currentView} onNavigate={handleNavigation} />
             </div>
 
             {/* Settings Modal */}
-            {showSettings && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                            <h2 className="text-lg font-bold text-gray-900">Settings</h2>
-                            <button
-                                onClick={() => setShowSettings(false)}
-                                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 space-y-4">
-                            {/* Profile Section */}
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-gray-900">Profile</h3>
-                                <div className="flex items-center space-x-3">
-                                    <User className="w-8 h-8 text-gray-400" />
-                                    <div className="flex-1">
-                                        {editingProfile ? (
-                                            <div className="flex space-x-2">
-                                                <input
-                                                    type="text"
-                                                    value={editName}
-                                                    onChange={(e) => setEditName(e.target.value)}
-                                                    className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                                                />
-                                                <button
-                                                    onClick={handleSaveProfile}
-                                                    className="px-3 py-1 bg-green-600 text-white rounded text-sm"
-                                                >
-                                                    Save
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium">{userProfile?.name}</span>
-                                                <button
-                                                    onClick={() => setEditingProfile(true)}
-                                                    className="p-1 text-gray-400 hover:text-gray-600"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Data Management */}
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-gray-900">Data</h3>
-                                <div className="space-y-2">
-                                    <button
-                                        onClick={handleExportData}
-                                        className="w-full flex items-center space-x-2 p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                        <span>Export Data</span>
-                                    </button>
-
-                                    <label className="w-full flex items-center space-x-2 p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors cursor-pointer">
-                                        <Upload className="w-4 h-4" />
-                                        <span>Import Data</span>
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            onChange={handleImportData}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Challenge Actions */}
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-gray-900">Challenge</h3>
-                                <div className="space-y-2">
-                                    <button
-                                        onClick={() => setShowRestartConfirm(true)}
-                                        className="w-full flex items-center space-x-2 p-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors"
-                                    >
-                                        <RotateCcw className="w-4 h-4" />
-                                        <span>Restart Challenge</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setShowClearDataConfirm(true)}
-                                        className="w-full flex items-center space-x-2 p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Clear All Data</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SettingsModal
+                show={showSettings}
+                onClose={() => setShowSettings(false)}
+                editingProfile={editingProfile}
+                editName={editName}
+                onEditNameChange={(e) => setEditName(e.target.value)}
+                onSaveProfile={handleSaveProfile}
+                onEditProfile={() => setEditingProfile(true)}
+                userProfile={userProfile}
+                handleExportData={handleExportData}
+                handleImportData={handleImportData}
+                onShowRestartConfirm={() => setShowRestartConfirm(true)}
+                onShowClearDataConfirm={() => setShowClearDataConfirm(true)}
+            />
 
             {/* Restart Confirmation Modal */}
-            {showRestartConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <div className="flex items-center space-x-3 mb-4">
-                            <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                            <h2 className="text-lg font-bold text-gray-900">Restart Challenge?</h2>
-                        </div>
-                        <p className="text-gray-600 mb-6">
-                            This will reset your progress and start the challenge from Day 1. Your profile and tasks will be preserved.
-                        </p>
-                        <div className="flex space-x-3">
-                            <button
-                                onClick={handleRestartChallenge}
-                                className="flex-1 bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors"
-                            >
-                                Restart Challenge
-                            </button>
-                            <button
-                                onClick={() => setShowRestartConfirm(false)}
-                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmationModal
+                show={showRestartConfirm}
+                onClose={() => setShowRestartConfirm(false)}
+                onConfirm={handleRestartChallenge}
+                title="Restart Challenge?"
+                description="This will reset your progress and start the challenge from Day 1. Your profile and tasks will be preserved."
+                confirmLabel="Restart Challenge"
+                confirmColor="bg-yellow-600"
+                icon={<AlertTriangle className="w-6 h-6 text-yellow-600" />}
+            />
 
             {/* Clear Data Confirmation Modal */}
-            {showClearDataConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <div className="flex items-center space-x-3 mb-4">
-                            <AlertTriangle className="w-6 h-6 text-red-600" />
-                            <h2 className="text-lg font-bold text-gray-900">Clear All Data?</h2>
-                        </div>
-                        <p className="text-gray-600 mb-6">
-                            This will permanently delete all your data including progress, profile, and custom tasks. This action cannot be undone.
-                        </p>
-                        <div className="flex space-x-3">
-                            <button
-                                onClick={handleClearAllData}
-                                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                Clear All Data
-                            </button>
-                            <button
-                                onClick={() => setShowClearDataConfirm(false)}
-                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmationModal
+                show={showClearDataConfirm}
+                onClose={() => setShowClearDataConfirm(false)}
+                onConfirm={handleClearAllData}
+                title="Clear All Data?"
+                description="This will permanently delete all your data including progress, profile, and custom tasks. This action cannot be undone."
+                confirmLabel="Clear All Data"
+                confirmColor="bg-red-600"
+                icon={<AlertTriangle className="w-6 h-6 text-red-600" />}
+            />
         </>
     );
 } 
