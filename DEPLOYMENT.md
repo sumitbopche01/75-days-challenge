@@ -10,7 +10,7 @@ your hosting platform (Vercel/Netlify/etc.):
 ```bash
 # NextAuth Configuration
 NEXTAUTH_URL=https://75days.harinext.com
-NEXTAUTH_SECRET=4451d634a9ad7c61746b0478f616feab1af960469685fb341e568826998d4605
+NEXTAUTH_SECRET=your-nextauth-secret-here
 
 # Google OAuth Credentials
 # Get these from Google Cloud Console
@@ -19,9 +19,9 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret-here
 
 # Supabase Configuration
 # ✅ Updated to use correct project URL
-NEXT_PUBLIC_SUPABASE_URL=https://wqzlhfmjhpfxkabgnqwi.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxemxoZm1qaHBmeGthYmducXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5MDU1NjksImV4cCI6MjA1MDQ4MTU2OX0.VKzELrOGEiHCUjYQ7YELhwT9RRlhUEyQEME3eIFgJDU
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxemxoZm1qaHBmeGthYmducXdpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDkwNTU2OSwiZXhwIjoyMDUwNDgxNTY5fQ.yYQdLdZFOGDkT2ztGNWNpEhPqxHQgm6JzjBW3sSNpPw
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url-here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-hereYELhwT9RRlhUEyQEME3eIFgJDU
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 ```
 
 ### 2. Configuration Validation

@@ -33,6 +33,9 @@ class SupabaseStorage {
     private pendingChanges: any[] = [];
     private syncInProgress = false;
     private syncCallbacks: ((status: SyncStatus) => void)[] = [];
+    private syncInterval: NodeJS.Timeout | null = null;
+    private onlineHandler: (() => void) | null = null;
+    private offlineHandler: (() => void) | null = null;
 
     constructor() {
         this.initializeOnlineDetection();
@@ -44,26 +47,48 @@ class SupabaseStorage {
         if (typeof window !== 'undefined') {
             this.isOnline = navigator.onLine;
 
-            window.addEventListener('online', () => {
+            this.onlineHandler = () => {
                 this.isOnline = true;
                 this.syncPendingChanges();
-            });
+            };
 
-            window.addEventListener('offline', () => {
+            this.offlineHandler = () => {
                 this.isOnline = false;
-            });
+            };
+
+            window.addEventListener('online', this.onlineHandler);
+            window.addEventListener('offline', this.offlineHandler);
         }
     }
 
     // Start periodic sync every 5 minutes
     private startPeriodicSync() {
         if (typeof window !== 'undefined') {
-            setInterval(() => {
+            this.syncInterval = setInterval(() => {
                 if (this.isOnline && !this.syncInProgress) {
                     this.syncPendingChanges();
                 }
             }, 5 * 60 * 1000); // 5 minutes
         }
+    }
+
+    // Cleanup method to prevent memory leaks
+    public cleanup() {
+        if (typeof window !== 'undefined') {
+            if (this.onlineHandler) {
+                window.removeEventListener('online', this.onlineHandler);
+            }
+            if (this.offlineHandler) {
+                window.removeEventListener('offline', this.offlineHandler);
+            }
+        }
+        
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
+        this.syncCallbacks = [];
     }
 
     // Subscribe to sync status changes

@@ -207,6 +207,15 @@ export default function HomePage() {
         initialize();
     }, [session]);
 
+    // Cleanup effect to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            // Cleanup SupabaseStorage when component unmounts
+            supabaseStorage.cleanup();
+            console.log('🧹 Component cleanup completed');
+        };
+    }, []);
+
     // Handle manual challenge start
     const handleStartChallenge = async () => {
         if (!userName.trim()) return;
