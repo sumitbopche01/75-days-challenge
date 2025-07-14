@@ -4,7 +4,8 @@
 
 ### 1. Environment Variables Setup
 
-Set these in your hosting platform (Vercel/Netlify/etc.):
+⚠️ **Critical**: Ensure all environment variables are properly configured in
+your hosting platform (Vercel/Netlify/etc.):
 
 ```bash
 # NextAuth Configuration
@@ -12,16 +13,23 @@ NEXTAUTH_URL=https://75days.harinext.com
 NEXTAUTH_SECRET=4451d634a9ad7c61746b0478f616feab1af960469685fb341e568826998d4605
 
 # Google OAuth Credentials
+# Get these from Google Cloud Console
 GOOGLE_CLIENT_ID=your-google-client-id-here
 GOOGLE_CLIENT_SECRET=your-google-client-secret-here
 
 # Supabase Configuration
+# ✅ Updated to use correct project URL
 NEXT_PUBLIC_SUPABASE_URL=https://wqzlhfmjhpfxkabgnqwi.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxemxoZm1qaHBmeGthYmducXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5MDU1NjksImV4cCI6MjA1MDQ4MTU2OX0.VKzELrOGEiHCUjYQ7YELhwT9RRlhUEyQEME3eIFgJDU
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxemxoZm1qaHBmeGthYmducXdpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDkwNTU2OSwiZXhwIjoyMDUwNDgxNTY5fQ.yYQdLdZFOGDkT2ztGNWNpEhPqxHQgm6JzjBW3sSNpPw
 ```
 
-### 2. Google Cloud Console Setup
+### 2. Configuration Validation
+
+✅ **New Feature**: The app now validates all environment variables on startup
+and will show clear error messages if any are missing.
+
+### 3. Google Cloud Console Setup
 
 1. Go to
    [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
@@ -30,15 +38,16 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
    `https://75days.harinext.com/api/auth/callback/google`
 4. Save changes
 
-### 3. Database Setup (Supabase)
+### 4. Database Setup (Supabase)
 
-✅ Already configured - no changes needed
+✅ **Configuration Updated**:
 
-- Database schema is ready
+- Database schema is ready in `database/schema.sql`
 - RLS policies removed (using service key authentication)
 - API keys are production-ready
+- Project URL corrected to: `https://wqzlhfmjhpfxkabgnqwi.supabase.co`
 
-### 4. Build & Deploy Commands
+### 5. Build & Deploy Commands
 
 For **Vercel**:
 
@@ -63,45 +72,74 @@ npm start
 
 ## 🔍 Post-Deployment Testing
 
-### Test These Features:
+### Core Functionality Tests:
 
 - [ ] App loads at https://75days.harinext.com
-- [ ] Manual name entry works
+- [ ] Environment variables are properly loaded (check console for validation
+      messages)
+- [ ] Manual name entry works and saves to database
 - [ ] Google OAuth sign-in works
-- [ ] Task creation/completion works
-- [ ] Data persists between sessions
+- [ ] Task creation/completion works and syncs to database
+- [ ] Data persists between sessions (stored in Supabase)
 - [ ] PWA install prompt appears
 - [ ] Offline functionality works
 - [ ] Mobile responsive design
 
-### API Endpoints to Test:
+### Database Integration Tests:
 
 - [ ] `GET /api/users/profile` - User profile retrieval
 - [ ] `POST /api/users/profile` - User creation
-- [ ] `GET /api/challenges` - Challenge data
-- [ ] `GET /api/tasks/custom` - Custom tasks
+- [ ] `GET /api/challenges` - Challenge data retrieval
+- [ ] `POST /api/challenges` - Challenge creation
+- [ ] `GET /api/tasks/custom` - Custom tasks retrieval
 - [ ] `POST /api/tasks/custom` - Task creation
+- [ ] Task completion tracking in database
+
+### Configuration Tests:
+
+- [ ] All environment variables are loaded correctly
+- [ ] Supabase connection works (check network tab)
+- [ ] Google OAuth redirect URIs are correct
+- [ ] Error messages are user-friendly (not raw API errors)
 
 ## 🛠 Troubleshooting
 
 ### Common Issues:
 
-1. **NextAuth JWT Error**
-   - Ensure `NEXTAUTH_SECRET` is set
-   - Verify `NEXTAUTH_URL` matches your domain
+1. **Environment Variable Validation Errors**
+   - Check all required variables are set in your deployment platform
+   - Verify no typos in variable names
+   - Ensure `NEXTAUTH_URL` matches your domain exactly
 
-2. **Google OAuth Not Working**
-   - Check redirect URI in Google Console
-   - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+2. **Supabase Connection Issues**
+   - Verify `NEXT_PUBLIC_SUPABASE_URL` is correct
+   - Check that service role key has proper permissions
+   - Ensure database schema is properly deployed
 
-3. **API 401 Errors**
-   - Ensure all environment variables are set
-   - Check Supabase keys are correct
+3. **Google OAuth Not Working**
+   - Check redirect URI in Google Console matches exactly
+   - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
+   - Ensure OAuth consent screen is properly configured
 
-4. **PWA Not Installing**
+4. **Database Sync Issues**
+   - Check network tab for failed API calls
+   - Verify user authentication is working
+   - Check Supabase logs for database errors
+
+5. **PWA Not Installing**
    - Verify HTTPS is enabled
    - Check manifest.json is accessible
    - Ensure service worker is registered
+
+## 🔐 Security Checklist
+
+- ✅ Environment variables are not exposed in client-side code
+- ✅ Service role key is only used in server-side API routes
+- ✅ Secure cookies enabled in production
+- ✅ HTTPS enforcement
+- ✅ JWT token encryption
+- ✅ API route protection with authentication
+- ✅ Input validation on all API endpoints
 
 ## 📱 PWA Features Enabled
 
@@ -112,10 +150,23 @@ npm start
 - ✅ Responsive design
 - ✅ App shortcuts
 
-## 🔐 Security Features
+## 🚀 Performance Optimizations
 
-- ✅ Secure cookies in production
-- ✅ HTTPS enforcement
-- ✅ JWT token encryption
-- ✅ API route protection
-- ✅ Environment variable protection
+- ✅ Environment variable validation reduces startup errors
+- ✅ Supabase as primary storage (faster than localStorage fallbacks)
+- ✅ Proper error handling prevents UI freezing
+- ✅ Optimized API calls with proper caching
+
+## 📊 Monitoring
+
+After deployment, monitor:
+
+- Application startup logs for configuration errors
+- API response times and error rates
+- Database query performance
+- User authentication success rates
+- PWA install rates and usage
+
+---
+
+**Good luck with your deployment! 🚀**
