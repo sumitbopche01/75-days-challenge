@@ -90,6 +90,10 @@ async function completeTask(req: NextApiRequest, res: NextApiResponse, userId: s
         .eq('id', challenge.id)
         .single();
 
+    if (!challengeData) {
+        return res.status(404).json({ error: 'Challenge data not found' });
+    }
+
     const startDate = new Date(challengeData.start_date);
     const currentDate = new Date(targetDate);
     const dayNumber = Math.ceil((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -124,6 +128,10 @@ async function completeTask(req: NextApiRequest, res: NextApiResponse, userId: s
         dailyProgress = newProgress;
     } else if (progressError) {
         return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!dailyProgress) {
+        return res.status(500).json({ error: 'Failed to get or create daily progress record' });
     }
 
     // Upsert task completion

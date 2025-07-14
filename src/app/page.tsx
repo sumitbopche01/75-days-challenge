@@ -743,8 +743,8 @@ export default function HomePage() {
                                 AddTaskForm={
                                     <AddTaskForm
                                         newTaskText={newTaskText}
-                                        onTextChange={setNewTaskText}
-                                        onSubmit={handleAddCustomTask}
+                                        onChangeNewTaskText={(e) => setNewTaskText(e.target.value)}
+                                        onAddCustomTask={handleAddCustomTask}
                                         onCancel={() => {
                                             setShowAddTask(false);
                                             setNewTaskText('');
@@ -792,39 +792,57 @@ export default function HomePage() {
                 {/* Settings Modal */}
                 {showSettings && (
                     <SettingsModal
-                        userProfile={userProfile}
+                        show={showSettings}
                         onClose={() => setShowSettings(false)}
-                        onRestartChallenge={() => setShowRestartConfirm(true)}
-                        onClearData={() => setShowClearDataConfirm(true)}
-                        onUpdateProfile={(name) => {
-                            // Handle profile update
-                            console.log('Update profile:', name);
+                        editingProfile={editingProfile}
+                        editName={editName}
+                        onEditNameChange={(e) => setEditName(e.target.value)}
+                        onSaveProfile={() => {
+                            // Save profile logic
+                            if (userProfile && editName.trim()) {
+                                setUserProfile({ ...userProfile, name: editName.trim() });
+                                setEditingProfile(false);
+                            }
                         }}
+                        onEditProfile={() => setEditingProfile(true)}
+                        userProfile={userProfile}
+                        handleExportData={() => {
+                            // Export data logic
+                            console.log('Export data');
+                        }}
+                        handleImportData={(event) => {
+                            // Import data logic
+                            console.log('Import data:', event.target.files);
+                        }}
+                        onShowRestartConfirm={() => setShowRestartConfirm(true)}
+                        onShowClearDataConfirm={() => setShowClearDataConfirm(true)}
                     />
                 )}
 
                 {/* Confirmation Modals */}
                 {showRestartConfirm && (
                     <ConfirmationModal
+                        show={showRestartConfirm}
+                        onClose={() => setShowRestartConfirm(false)}
                         title="Restart Challenge"
-                        message="Are you sure you want to restart your 75 Hard Challenge? This will reset your progress and start from Day 1."
+                        description="Are you sure you want to restart your 75 Hard Challenge? This will reset your progress and start from Day 1."
                         onConfirm={handleRestartChallenge}
-                        onCancel={() => setShowRestartConfirm(false)}
-                        confirmText="Restart"
-                        cancelText="Cancel"
-                        isDestructive={true}
+                        confirmLabel="Restart"
+                        confirmColor="bg-yellow-600"
+                        icon={<RotateCcw className="w-6 h-6" />}
                     />
                 )}
 
                 {showClearDataConfirm && (
                     <ConfirmationModal
+                        show={showClearDataConfirm}
+                        onClose={() => setShowClearDataConfirm(false)}
                         title="Clear All Data"
-                        message="Are you sure you want to clear all your data? This action cannot be undone."
+                        description="Are you sure you want to clear all your data? This action cannot be undone."
                         onConfirm={handleClearAllData}
-                        onCancel={() => setShowClearDataConfirm(false)}
-                        confirmText="Clear Data"
-                        cancelText="Cancel"
-                        isDestructive={true}
+                        confirmLabel="Clear Data"
+                        confirmColor="bg-red-600"
+                        icon={<Trash2 className="w-6 h-6" />}
                     />
                 )}
             </div>

@@ -105,15 +105,21 @@ async function getTaskCompletions(req: NextApiRequest, res: NextApiResponse, use
     }
 
     // Format the response
-    const formattedCompletions = completions.map(completion => ({
-        id: completion.id,
-        custom_task_id: completion.custom_task_id,
-        task_text: completion.custom_tasks.task_text,
-        is_default: completion.custom_tasks.is_default,
-        order_index: completion.custom_tasks.order_index,
-        completed: completion.completed,
-        completed_at: completion.completed_at
-    }));
+    const formattedCompletions = completions.map(completion => {
+        const customTask = Array.isArray(completion.custom_tasks) 
+            ? completion.custom_tasks[0] 
+            : completion.custom_tasks;
+            
+        return {
+            id: completion.id,
+            custom_task_id: completion.custom_task_id,
+            task_text: customTask?.task_text,
+            is_default: customTask?.is_default,
+            order_index: customTask?.order_index,
+            completed: completion.completed,
+            completed_at: completion.completed_at
+        };
+    });
 
     return res.status(200).json({
         completions: formattedCompletions,

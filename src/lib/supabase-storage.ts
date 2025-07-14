@@ -125,8 +125,7 @@ class SupabaseStorage {
                         name: user.name,
                         email: user.email,
                         createdAt: user.created_at,
-                        avatarUrl: user.avatar_url,
-                        googleId: user.google_id,
+                        avatar: user.avatar_url,
                     };
 
                     // Cache in localStorage
@@ -180,8 +179,7 @@ class SupabaseStorage {
                         name: user.name,
                         email: user.email,
                         createdAt: user.created_at,
-                        avatarUrl: user.avatar_url,
-                        googleId: user.google_id,
+                        avatar: user.avatar_url,
                     };
 
                     // Cache in localStorage
